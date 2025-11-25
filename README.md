@@ -1,1 +1,3 @@
 This is a Virtual Serial Ports Emulator developed for [Current Monitor]([GitHub - shenmeshisanpao/Current-Monitor: Real-time current monitoring system (Dual Channel)](https://github.com/shenmeshisanpao/Current-Monitor)), used for testing when a physical ammeter is unavailable.
+
+ONLY Available on Linux.
