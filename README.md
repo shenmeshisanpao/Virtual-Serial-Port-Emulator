@@ -13,9 +13,3 @@ It generates simulated Modbus RTU data (Sine/Cosine waves) and supports two conn
 | :--- | :---: | :---: | :---: | :--- |
 | **Network TCP Mode** | ✅ | ✅ | ✅ | Python 3 |
 | **Virtual Serial Mode** | ❌ | ✅ | ❌ | `sudo apt install socat` |
-
-## How to Use
-
-1. Run the simulator:
-   ```bash
-   python main.py
