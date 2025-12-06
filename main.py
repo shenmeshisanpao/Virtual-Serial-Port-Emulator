@@ -267,7 +267,14 @@ class SimulatorApp:
         """启动串口模式"""
         # 检查 socat
         if subprocess.call(["which", "socat"], stdout=subprocess.DEVNULL) != 0:
-            messagebox.showerror("Error", "socat not found! Please run: sudo apt-get install socat")
+            error_msg = (
+                "'socat' not found!\n\n"
+                "This tool is required for Virtual Serial Mode.\n"
+                "Please install it via terminal:\n\n"
+                "Ubuntu/Debian: sudo apt install socat\n"
+                "CentOS/RedHat: sudo yum install socat"
+            )
+            messagebox.showerror("Error", error_msg)
             return
 
         try:
