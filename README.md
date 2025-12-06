@@ -1,3 +1,21 @@
-This is a Virtual Serial Ports Emulator developed for [Current Monitor]([GitHub - shenmeshisanpao/Current-Monitor: Real-time current monitoring system (Dual Channel)](https://github.com/shenmeshisanpao/Current-Monitor)), used for testing when a physical ammeter is unavailable.
+# Virtual Instrument Emulator
 
-ONLY Available on Linux.
+This is a Virtual Instrument Emulator developed for [Current Monitor](https://github.com/shenmeshisanpao/Current-Monitor), used for testing when a physical ammeter is unavailable.
+
+It generates simulated Modbus RTU data (Sine/Cosine waves) and supports two connection modes:
+
+1.  **Network TCP Mode:** Simulates a Serial Device Server (Cross-platform).
+2.  **Virtual Serial Mode:** Creates paired virtual serial ports (Linux only).
+
+## Compatibility
+
+| Feature | Windows | Linux | macOS | Requirements |
+| :--- | :---: | :---: | :---: | :--- |
+| **Network TCP Mode** | ✅ | ✅ | ✅ | Python 3 |
+| **Virtual Serial Mode** | ❌ | ✅ | ❌ | `sudo apt install socat` |
+
+## How to Use
+
+1. Run the simulator:
+   ```bash
+   python main.py

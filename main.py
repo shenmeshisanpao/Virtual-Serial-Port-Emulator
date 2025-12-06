@@ -240,7 +240,7 @@ class SimulatorApp:
         lbl_note = tk.Label(self.root, text="Keep this window open to maintain the connection.", fg="firebrick", font=("Arial", 12, "bold"))
         lbl_note.pack(pady=10)
         
-        tk.Label(self.root, text="Copyright (C) 2025 ZhiCheng Zhang.\nCIAE Nuclear Astrophysics Group.\nBeijing, 2025.", fg="gray").pack(side="bottom", pady=10)
+        tk.Label(self.root, text="Copyright (C) 2025 ZhiCheng Zhang. All Rights Reserved.\nCIAE Nuclear Astrophysics Group, Beijing.", fg="gray").pack(side="bottom", pady=10)
         
         btn_stop = tk.Button(self.root, text="STOP and EXIT", command=self.cleanup_and_exit, bg="#ffcccc", font=("Arial", 10, "bold"))
         btn_stop.pack(side="bottom", pady=5)
