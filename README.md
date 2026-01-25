@@ -9,16 +9,16 @@ It generates simulated Modbus RTU data (Sine/Cosine waves) and supports two conn
 
 ## Compatibility
 
-| Feature | Windows | Linux | macOS | Requirements |
-| :--- | :---: | :---: | :---: | :--- |
-| **Network TCP Mode** | ✅ | ✅ | ✅ | Python 3 |
-| **Virtual Serial Mode** | ❌ | ✅ | ❌ | `sudo apt install socat` |
+| Feature | Windows | Linux | macOS |
+| :--- | :---: | :---: | :---: |
+| **Network TCP Mode** | ✅ | ✅ | ✅ |
+| **Virtual Serial Mode** | ❌ | ✅ | ✅ |
 
 ## How to Use
 
 1. Run the simulator:
    ```bash
-   python main.py
+   python3 main.py
 
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](https://www.gnu.org/licenses/gpl-3.0.txt) file for details.

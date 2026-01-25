@@ -27,6 +27,10 @@ import ctypes
 import tkinter as tk
 from tkinter import messagebox
 import socket
+import os
+import pty
+import tty
+import select
 
 ## CRC 与 数据转换
 
@@ -59,46 +63,76 @@ def generate_wave_value(channel_name, elapsed_time):
 
 ## 模拟器进程：串口模式
 
-def simulator_process_serial(port, channel_name):
-    """串口模拟器工作进程"""
-    import serial # 在进程内导入
+def simulator_process_serial(output_queue, channel_name):
+    """
+    串口模拟器工作进程 - 原生 PTY
+    为解决 Linux 下 Buffer Overflow 和 Echo 问题。
+    不再连接外部串口，而是自己生成一个 /dev/pts/XX 供外部连接。
+    """
     
-    print(f"   [Serial-Sim] {channel_name} is connecting to {port}...")
+    # 1. 创建一对伪终端 (Master/Slave)
+    # master_fd: 模拟器自己用（读写）
+    # slave_fd:  给串口读取程序用
     try:
-        ser = serial.Serial(port, 9600, timeout=0.1)
-    except Exception as e:
-        print(f"   [Error] Unable to open simulator port {port}: {e}")
-        return
+        master_fd, slave_fd = pty.openpty()
+        
+        # 2. 设置为 RAW 模式 (禁用回显、禁用缓冲、禁用特殊字符处理)
+        tty.setraw(master_fd)
+        tty.setraw(slave_fd)
+        
+        # 获取生成的串口名
+        slave_name = os.ttyname(slave_fd)
+        
+        # 3. 将生成的端口名发送回 GUI 主进程
+        output_queue.put(slave_name)
+        
+        print(f"   [Serial-Sim] {channel_name} started on {slave_name}")
 
-    start_time = time.time()
-    
-    while True:
-        try:
-            if ser.in_waiting < 8:
-                time.sleep(0.01) # 如果没数据，休息 10ms，释放 CPU
-                continue
-
-            request = ser.read(8)
-            if len(request) == 8:
-                slave_id = request[0]
-                func_code = request[1]
+        start_time = time.time()
+        
+        while True:
+            # 使用 select 监听 master_fd 是否有数据可读 (非阻塞检查)
+            # 0.01 秒超时
+            r, w, e = select.select([master_fd], [], [], 0.01)
+            
+            if master_fd in r:
+                # 4. 读取请求 (直接使用 os.read，绕过 Python serial 库的缓冲)
+                try:
+                    request = os.read(master_fd, 1024) # 一次读完所有积压数据
+                except OSError:
+                    break
                 
-                if slave_id == 1 and func_code == 3:
-                    elapsed = time.time() - start_time
-                    val = generate_wave_value(channel_name, elapsed)
-                    reg_h, reg_l = float_to_registers(val)
-                    
-                    # 响应
-                    header = struct.pack('>B B B', slave_id, func_code, 4)
-                    data = struct.pack('>H H', reg_h, reg_l)
-                    frame = header + data
-                    crc = calculate_crc(frame)
-                    packet = frame + struct.pack('<H', crc)
-                    
-                    ser.write(packet)
+                # 简单的协议解析：寻找 01 03 ...
+                if len(request) >= 8:
+                    # 校验简单的帧头 (Modbus: Slave 1, Func 3)
+                    if request[0] == 1 and request[1] == 3:
+                        elapsed = time.time() - start_time
+                        val = generate_wave_value(channel_name, elapsed)
+                        reg_h, reg_l = float_to_registers(val)
+                        
+                        # 构建响应
+                        header = struct.pack('>B B B', 1, 3, 4)
+                        data = struct.pack('>H H', reg_h, reg_l)
+                        frame = header + data
+                        crc = calculate_crc(frame)
+                        packet = frame + struct.pack('<H', crc)
+                        
+                        # 5. 发送响应 (直接写入 master_fd)
+                        os.write(master_fd, packet)
+                        
+    except Exception as e:
+        print(f"   [Error] Simulator {channel_name} crashed: {e}")
+        # 如果还没发回端口名就挂了，发个 None 防止 GUI 卡死
+        try:
+            output_queue.put(None)
         except:
-            break
-    ser.close()
+            pass
+    finally:
+        try:
+            os.close(master_fd)
+            os.close(slave_fd)
+        except:
+            pass
 
 ## 模拟器进程：网络 TCP 模式
 
@@ -107,7 +141,7 @@ def simulator_process_tcp(port, channel_name):
     print(f"   [TCP-Sim] {channel_name} listening on 0.0.0.0:{port}...")
     
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # 允许端口复用，防止重启时报错 Address already in use
+    # 允许端口复用
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     
     try:
@@ -172,24 +206,6 @@ def simulator_process_tcp(port, channel_name):
 
     server_socket.close()
 
-## 环境管理 (Socat)
-
-def get_socat_ports():
-    """启动 socat 并解析输出的端口对"""
-    cmd = ["socat", "-d", "-d", "pty,raw,echo=0", "pty,raw,echo=0"]
-    proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1)
-    ports = []
-    while len(ports) < 2:
-        line = proc.stderr.readline()
-        if not line: break
-        match = re.search(r'PTY is (/dev/pts/\d+)', line)
-        if match: ports.append(match.group(1))
-            
-    if len(ports) != 2:
-        proc.kill()
-        raise RuntimeError("Unable to get port pair from socat")
-    return proc, ports[0], ports[1]
-
 ## GUI
 
 class SimulatorApp:
@@ -197,10 +213,7 @@ class SimulatorApp:
         self.root = root
         self.root.title("Instrument Simulator Setup")
         self.root.geometry("1000x400")
-        
         self.processes = []
-        self.socat_procs = []
-        
         self.setup_start_screen()
         
     def setup_start_screen(self):
@@ -225,7 +238,7 @@ class SimulatorApp:
                                command=self.start_network_mode)
         btn_network.pack(side="left", padx=10)
         
-        tk.Label(self.root, text="Serial Mode requires 'socat' installed.\nNetwork Mode uses TCP ports 1030/1031.", fg="gray").pack(side="bottom", pady=20)
+        tk.Label(self.root, text="Native PTY Mode.\nNetwork Mode uses TCP ports 1030/1031.", fg="gray").pack(side="bottom", pady=20)
 
     def show_running_screen(self, mode_name, p1_info, p2_info, p1_label="Channel 1:", p2_label="Channel 2:"):
         """运行状态界面"""
@@ -265,30 +278,14 @@ class SimulatorApp:
 
     def start_serial_mode(self):
         """启动串口模式"""
-        # 检查 socat
-        if subprocess.call(["which", "socat"], stdout=subprocess.DEVNULL) != 0:
-            error_msg = (
-                "'socat' not found!\n\n"
-                "This tool is required for Virtual Serial Mode.\n"
-                "Please install it via terminal:\n\n"
-                "Ubuntu/Debian: sudo apt install socat\n"
-                "CentOS/RedHat: sudo yum install socat"
-            )
-            messagebox.showerror("Error", error_msg)
-            return
-
         try:
             print("Initializing virtual serial ports...")
-            # 启动 socat
-            proc1, p1_sim, p1_user = get_socat_ports()
-            self.socat_procs.append(proc1)
-            
-            proc2, p2_sim, p2_user = get_socat_ports()
-            self.socat_procs.append(proc2)
+            q1 = multiprocessing.Queue()
+            q2 = multiprocessing.Queue()
             
             # 启动模拟进程
-            sim1 = multiprocessing.Process(target=simulator_process_serial, args=(p1_sim, "Channel 1"))
-            sim2 = multiprocessing.Process(target=simulator_process_serial, args=(p2_sim, "Channel 2"))
+            sim1 = multiprocessing.Process(target=simulator_process_serial, args=(q1, "Channel 1"))
+            sim2 = multiprocessing.Process(target=simulator_process_serial, args=(q2, "Channel 2"))
             
             sim1.daemon = True
             sim2.daemon = True
@@ -296,6 +293,23 @@ class SimulatorApp:
             sim2.start()
             
             self.processes.extend([sim1, sim2])
+
+            # 等待子进程返回生成的端口名 (阻塞式获取，通常是瞬间的)
+            # 设置超时防止无限等待
+            try:
+                p1_user = q1.get(timeout=5)
+                p2_user = q2.get(timeout=5)
+            except Exception:
+                messagebox.showerror("Error", "Timeout waiting for PTY generation.")
+                self.cleanup_and_exit()
+                return
+
+            if not p1_user or not p2_user:
+                messagebox.showerror("Error", "Failed to generate PTY ports.")
+                self.cleanup_and_exit()
+                return
+
+            print(f"Ports generated: {p1_user}, {p2_user}")
             
             # 更新界面
             self.show_running_screen("Virtual Serial Mode", p1_user, p2_user, "Channel 1 Port:", "Channel 2 Port:")
@@ -344,8 +358,6 @@ class SimulatorApp:
         print("\nCleaning up environment...")
         for p in self.processes:
             if p.is_alive(): p.terminate()
-        for proc in self.socat_procs:
-            proc.kill()
         print("Cleanup complete.")
         self.root.destroy()
 
