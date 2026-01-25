@@ -16,7 +16,9 @@ It generates simulated Modbus RTU data (Sine/Cosine waves) and supports two conn
 
 ## How to Use
 
-1. Run the simulator:
+1. Download 'main.py'
+
+2. Run the simulator:
    ```bash
    python3 main.py
 
