@@ -28,13 +28,30 @@ It generates simulated Modbus RTU data (Sine/Cosine waves) and supports two conn
 | **Network TCP Mode** | ✅ | ✅ | ✅ |
 | **Virtual Serial Mode** | ❌ | ✅ | ✅ |
 
+### Pre-built Binary (Linux x86-64)
+
+A packaged executable is available in the GitHub Releases. Minimum requirements:
+
+| Dependency | Version | Released |
+| :--- | :--- | :--- |
+| glibc | >= 2.14 | 2011 |
+| Linux kernel | >= 3.2 | 2012 |
+
+Compatible with Ubuntu 12.04+, Debian 8+, CentOS 7+, and any modern Linux distribution.
+
 ## How to Use
 
-1. Download 'main.py'
+### Run from source
 
-2. Run the simulator:
-   ```bash
-   python3 main.py
+```bash
+python3 main.py
+```
+
+### Run the pre-built binary
+
+```bash
+chmod +x Instrument_Simulator
+./Instrument_Simulator
 
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](https://www.gnu.org/licenses/gpl-3.0.txt) file for details.
