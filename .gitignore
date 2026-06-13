@@ -1,0 +1,18 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Packaging toolchain
+miniconda.sh
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
