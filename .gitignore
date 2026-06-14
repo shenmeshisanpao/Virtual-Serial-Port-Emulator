@@ -1,0 +1,22 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Packaging toolchain
+miniconda.sh
+
+# Local-only project files
+CODEBUDDY.md
+Docker打包步骤.md
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
