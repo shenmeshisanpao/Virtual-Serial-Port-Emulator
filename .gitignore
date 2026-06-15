@@ -20,3 +20,8 @@ Docker打包步骤.md
 *.swp
 *.swo
 *~
+
+
+*.json
+*jsonl
+Instrument*
