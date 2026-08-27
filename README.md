@@ -26,7 +26,9 @@ Default settings:
 | Feature | Windows | Linux | macOS |
 | :--- | :---: | :---: | :---: |
 | **Network TCP Mode** | ✅ | ✅ | ✅ |
-| **Virtual Serial Mode** | ❌ | ✅ | ✅ |
+| **Virtual Serial Mode** | ❌ (button disabled) | ✅ | ✅ |
+
+- Windows: Virtual Serial Mode is unavailable (POSIX `pty` is required). The button is disabled and Network TCP Mode works normally.
 
 ### Pre-built Binary (Linux x86-64)
 
@@ -48,6 +50,24 @@ python3 main.py
 ```
 
 No external dependencies — uses only Python standard library (tkinter, multiprocessing, sockets, pty).
+
+### Switch Language
+
+The GUI ships in English and Chinese. Click the language button in the **top-left corner** of the start screen to toggle between them at any time.
+
+### UI Theme
+
+The GUI uses the [Azure-ttk-theme](https://github.com/rdbende/Azure-ttk-theme) (MIT License) Fluent Design theme (light variant), bundled in the repo as `azure.tcl` + `theme/`. When packaging with PyInstaller, the theme files must be included:
+
+```bash
+pyinstaller --clean --noconfirm --windowed --onefile \
+    --add-data "azure.tcl:." \
+    --add-data "theme:theme" \
+    --name "Instrument_Simulator" \
+    main.py
+```
+
+(Use `;` as the separator instead of `:` on Windows.) If the theme files are missing, the GUI automatically falls back to the built-in `clam` theme.
 
 ### Run the pre-built binary
 

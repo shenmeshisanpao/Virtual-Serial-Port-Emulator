@@ -1,3 +1,4 @@
+.gitignore
 # Python bytecode
 __pycache__/
 *.pyc
@@ -20,7 +21,9 @@ Docker打包步骤.md
 *.swp
 *.swo
 *~
-
+temp/
+.codebuddy/
+Update*.md
 
 *.json
 *jsonl
