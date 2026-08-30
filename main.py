@@ -69,7 +69,7 @@ def float_to_registers(value):
 
 ## 全局常量
 
-VERSION = "2.1.0"
+VERSION = "2.1.1"
 GITHUB_URL = "https://github.com/shenmeshisanpao/Virtual-Serial-Port-Emulator/releases"
 
 
@@ -624,6 +624,10 @@ class SimulatorApp:
         self._clear_widget_refs()
         self.running = False
         self.mode = None
+        # 重置通道配置：再次进入运行页时 GUI 重建为默认 DC，
+        # 若不重置会残留上次的 signal_type，导致 Start 时读取错误类型的参数
+        self.ch1_config = ChannelConfig()
+        self.ch2_config = ChannelConfig()
 
         self.root.protocol("WM_DELETE_WINDOW", self.cleanup_and_exit)
         self._center_window(1000, 400)
